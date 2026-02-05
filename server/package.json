@@ -1,0 +1,28 @@
+{
+  "name": "signoff-flow-mcp",
+  "version": "2.0.0",
+  "description": "MCP server for managing signoff workflows with automatic onboarding",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "signoff-flow-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "signoff",
+    "workflow",
+    "github",
+    "jira"
+  ],
+  "author": "HALO",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
