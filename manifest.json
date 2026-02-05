@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "signoff-flow",
   "display_name": "Signoff Flow",
-  "version": "2.0.0",
-  "description": "Gestiona flujos de signoff para iniciativas con integración de GitHub y Jira.",
-  "long_description": "Herramienta para equipos de producto que gestiona el flujo de signoffs para iniciativas. Incluye onboarding automático (instala gh CLI si es necesario), gestión de proyectos (clonar repos de GitHub), y creación de artefactos con tickets de Jira. Diseñado para usuarios no técnicos como PMs.",
+  "version": "2.0.1",
+  "description": "Manage signoff workflows for product initiatives with GitHub and Jira integration.",
+  "long_description": "A tool for product teams to manage signoff workflows for initiatives. Includes automatic onboarding (installs gh CLI if needed), project management (clone repos from GitHub), and artifact creation with Jira tickets. Designed for non-technical users like Product Managers.",
   "author": {
     "name": "HALO",
     "url": "https://github.com/kikeacevedo/signoff-flow-mcp-v2"
@@ -25,43 +25,43 @@
   "tools": [
     {
       "name": "signoff_check_setup",
-      "description": "Verifica si el entorno está listo. Comprueba e instala gh CLI automáticamente si es necesario."
+      "description": "Check if the environment is ready. Verifies and automatically installs gh CLI if needed."
     },
     {
       "name": "signoff_authenticate",
-      "description": "Guía el proceso de autenticación en GitHub."
+      "description": "Guide the GitHub authentication process."
     },
     {
       "name": "signoff_list_projects",
-      "description": "Lista proyectos disponibles (locales y de GitHub)."
+      "description": "List available projects (local and from GitHub)."
     },
     {
       "name": "signoff_select_project",
-      "description": "Selecciona un proyecto para trabajar."
+      "description": "Select a project to work with."
     },
     {
       "name": "signoff_clone_project",
-      "description": "Clona un repositorio de GitHub."
+      "description": "Clone a GitHub repository."
     },
     {
       "name": "signoff_status",
-      "description": "Muestra estado del proyecto actual y su governance."
+      "description": "Show current project status and governance configuration."
     },
     {
       "name": "signoff_setup_governance",
-      "description": "Configura los leads de BA, Design y Dev, y las reglas de signoff."
+      "description": "Configure BA, Design and Dev leads, and signoff rules."
     },
     {
       "name": "signoff_new_initiative",
-      "description": "Crea una nueva iniciativa de producto."
+      "description": "Create a new product initiative."
     },
     {
       "name": "signoff_advance",
-      "description": "Avanza al siguiente paso de una iniciativa (PRD → UX → Architecture → Epics → Readiness)."
+      "description": "Advance to the next step of an initiative (PRD → UX → Architecture → Epics → Readiness)."
     },
     {
       "name": "signoff_create_jira_tickets",
-      "description": "Genera tickets de Jira para solicitar signoff de los leads."
+      "description": "Generate Jira tickets to request signoff from leads."
     }
   ],
   "keywords": [

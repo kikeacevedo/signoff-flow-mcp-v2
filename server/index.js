@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { exec, execSync, spawn } from "child_process";
+import { exec, execSync } from "child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, appendFileSync } from "fs";
 import { homedir, platform } from "os";
 import { join } from "path";
@@ -30,7 +30,7 @@ let projectsDir = join(homedir(), "signoff-projects");
 const server = new Server(
   {
     name: "signoff-flow-mcp",
-    version: "2.0.0",
+    version: "2.0.1",
   },
   {
     capabilities: {
@@ -60,7 +60,7 @@ function commandExists(cmd) {
 
 function isGhAuthenticated() {
   try {
-    const result = execSync("gh auth status", { encoding: "utf-8", stdio: "pipe" });
+    execSync("gh auth status", { encoding: "utf-8", stdio: "pipe" });
     return true;
   } catch {
     return false;
@@ -81,44 +81,27 @@ async function installGhCli() {
   
   try {
     if (os === "macos") {
-      // Check if Homebrew exists
       if (!commandExists("brew")) {
-        // Install Homebrew first
         const brewInstall = '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"';
         await execAsync(brewInstall, { shell: "/bin/bash" });
       }
-      // Install gh
       await execAsync("brew install gh");
-      return { success: true, message: "gh CLI instalado correctamente via Homebrew" };
+      return { success: true, message: "gh CLI installed successfully via Homebrew" };
     } 
     else if (os === "windows") {
-      // Use winget (comes with Windows 11, available on Windows 10)
       await execAsync("winget install --id GitHub.cli -e --source winget --accept-package-agreements --accept-source-agreements");
-      return { success: true, message: "gh CLI instalado correctamente via winget" };
+      return { success: true, message: "gh CLI installed successfully via winget" };
     }
     else {
       return { 
         success: false, 
-        message: "Sistema operativo no soportado para instalación automática. Por favor instala gh CLI manualmente: https://cli.github.com/" 
+        message: "Unsupported operating system for automatic installation. Please install gh CLI manually: https://cli.github.com/" 
       };
     }
   } catch (error) {
     return { 
       success: false, 
-      message: `Error instalando gh CLI: ${error.message}. Por favor instala manualmente: https://cli.github.com/` 
-    };
-  }
-}
-
-async function authenticateGh() {
-  try {
-    // Start web-based authentication
-    const result = await execAsync("gh auth login --web --git-protocol https", { timeout: 120000 });
-    return { success: true, message: "Autenticación completada" };
-  } catch (error) {
-    return { 
-      success: false, 
-      message: `Para autenticarte, abre una terminal y ejecuta: gh auth login\n\nSigue las instrucciones para completar la autenticación via navegador.`
+      message: `Error installing gh CLI: ${error.message}. Please install manually: https://cli.github.com/` 
     };
   }
 }
@@ -187,7 +170,6 @@ function getLocalProjects() {
       const projectPath = join(projectsDir, dirent.name);
       const hasGovernance = existsSync(join(projectPath, "_bmad-output", "governance", "governance.yaml"));
       
-      // Try to get remote URL
       let remoteUrl = null;
       try {
         remoteUrl = execSync("git remote get-url origin", { 
@@ -587,21 +569,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // ===== SETUP TOOLS =====
       case "signoff_check_setup": {
         const autoInstall = args?.auto_install !== false;
-        let result = `## 🔧 Verificación del Entorno\n\n`;
+        let result = `## 🔧 Environment Check\n\n`;
         
         // Check OS
         const os = getOS();
-        result += `**Sistema Operativo:** ${os === "macos" ? "macOS" : os === "windows" ? "Windows" : "Linux"}\n`;
-        result += `**Directorio de proyectos:** ${projectsDir}\n\n`;
+        result += `**Operating System:** ${os === "macos" ? "macOS" : os === "windows" ? "Windows" : "Linux"}\n`;
+        result += `**Projects Directory:** ${projectsDir}\n\n`;
         
         // Check gh CLI
         const ghInstalled = commandExists("gh");
         
         if (!ghInstalled) {
-          result += `### ❌ gh CLI no instalado\n\n`;
+          result += `### ❌ gh CLI not installed\n\n`;
           
           if (autoInstall) {
-            result += `Instalando gh CLI automáticamente...\n\n`;
+            result += `Installing gh CLI automatically...\n\n`;
             const installResult = await installGhCli();
             
             if (installResult.success) {
@@ -611,7 +593,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               return { content: [{ type: "text", text: result }] };
             }
           } else {
-            result += `Para instalar manualmente:\n`;
+            result += `To install manually:\n`;
             if (os === "macos") {
               result += `\`\`\`bash\nbrew install gh\n\`\`\`\n`;
             } else if (os === "windows") {
@@ -620,16 +602,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             return { content: [{ type: "text", text: result }] };
           }
         } else {
-          result += `### ✅ gh CLI instalado\n\n`;
+          result += `### ✅ gh CLI installed\n\n`;
         }
         
         // Check authentication
         const isAuth = isGhAuthenticated();
         
         if (!isAuth) {
-          result += `### ❌ No autenticado en GitHub\n\n`;
-          result += `Necesitas autenticarte para acceder a tus repositorios.\n\n`;
-          result += `**Siguiente paso:** Usa la herramienta \`signoff_authenticate\` para iniciar el proceso de login.\n`;
+          result += `### ❌ Not authenticated to GitHub\n\n`;
+          result += `You need to authenticate to access your repositories.\n\n`;
+          result += `**Next step:** Use the \`signoff_authenticate\` tool to start the login process.\n`;
           
           return { 
             content: [{ type: "text", text: result }],
@@ -638,43 +620,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         
         const user = getGhUser();
-        result += `### ✅ Autenticado como: ${user}\n\n`;
+        result += `### ✅ Authenticated as: ${user}\n\n`;
         
         // Check if project is selected
         if (currentProject) {
-          result += `### ✅ Proyecto activo: ${currentProject}\n\n`;
+          result += `### ✅ Active project: ${currentProject}\n\n`;
         } else {
-          result += `### ⚠️ Ningún proyecto seleccionado\n\n`;
-          result += `**Siguiente paso:** Usa \`signoff_list_projects\` para ver proyectos disponibles.\n`;
+          result += `### ⚠️ No project selected\n\n`;
+          result += `**Next step:** Use \`signoff_list_projects\` to see available projects.\n`;
         }
         
-        result += `\n---\n\n**Estado:** ✅ Listo para usar\n`;
+        result += `\n---\n\n**Status:** ✅ Ready to use\n`;
         
         return { content: [{ type: "text", text: result }] };
       }
       
       case "signoff_authenticate": {
-        let result = `## 🔐 Autenticación de GitHub\n\n`;
+        let result = `## 🔐 GitHub Authentication\n\n`;
         
         if (isGhAuthenticated()) {
           const user = getGhUser();
-          result += `✅ Ya estás autenticado como **${user}**\n\n`;
-          result += `Si quieres cambiar de cuenta, ejecuta en terminal:\n\`\`\`bash\ngh auth logout\ngh auth login\n\`\`\`\n`;
+          result += `✅ You are already authenticated as **${user}**\n\n`;
+          result += `If you want to switch accounts, run in terminal:\n\`\`\`bash\ngh auth logout\ngh auth login\n\`\`\`\n`;
           return { content: [{ type: "text", text: result }] };
         }
         
-        result += `Para autenticarte, necesito que hagas lo siguiente:\n\n`;
-        result += `1. **Abre una terminal** en tu computadora\n`;
-        result += `2. **Ejecuta este comando:**\n`;
+        result += `To authenticate, please follow these steps:\n\n`;
+        result += `1. **Open a terminal** on your computer\n`;
+        result += `2. **Run this command:**\n`;
         result += `\`\`\`bash\ngh auth login\n\`\`\`\n`;
-        result += `3. **Sigue las instrucciones:**\n`;
-        result += `   - Selecciona "GitHub.com"\n`;
-        result += `   - Selecciona "HTTPS"\n`;
-        result += `   - Selecciona "Login with a web browser"\n`;
-        result += `   - Copia el código que aparece\n`;
-        result += `   - Se abrirá tu navegador, pega el código\n`;
-        result += `   - Autoriza la aplicación\n\n`;
-        result += `4. **Cuando termines**, vuelve aquí y usa \`signoff_check_setup\` para verificar.\n`;
+        result += `3. **Follow the prompts:**\n`;
+        result += `   - Select "GitHub.com"\n`;
+        result += `   - Select "HTTPS"\n`;
+        result += `   - Select "Login with a web browser"\n`;
+        result += `   - Copy the code that appears\n`;
+        result += `   - Your browser will open, paste the code\n`;
+        result += `   - Authorize the application\n\n`;
+        result += `4. **When done**, come back here and use \`signoff_check_setup\` to verify.\n`;
         
         return { content: [{ type: "text", text: result }] };
       }
@@ -685,21 +667,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return {
             content: [{
               type: "text",
-              text: "❌ gh CLI no está instalado. Usa `signoff_check_setup` primero.",
+              text: "❌ gh CLI is not installed. Use `signoff_check_setup` first.",
             }],
             isError: true,
           };
         }
         
-        let result = `## 📁 Proyectos Disponibles\n\n`;
+        let result = `## 📁 Available Projects\n\n`;
         
         // Local projects
         const localProjects = getLocalProjects();
         
-        result += `### Proyectos Locales (${projectsDir})\n\n`;
+        result += `### Local Projects (${projectsDir})\n\n`;
         
         if (localProjects.length === 0) {
-          result += `*No hay proyectos clonados todavía.*\n\n`;
+          result += `*No projects cloned yet.*\n\n`;
         } else {
           for (const proj of localProjects) {
             const govIcon = proj.hasGovernance ? "✅" : "⚪";
@@ -715,35 +697,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         // Remote projects (if authenticated and requested)
         if (args?.include_remote !== false && isGhAuthenticated()) {
-          result += `### Proyectos en GitHub\n\n`;
+          result += `### GitHub Projects\n\n`;
           
           if (args?.org) {
-            // Specific org
             const repos = listOrgRepos(args.org);
-            result += `**Organización: ${args.org}**\n\n`;
+            result += `**Organization: ${args.org}**\n\n`;
             
             if (repos.length === 0) {
-              result += `*No se encontraron repositorios.*\n\n`;
+              result += `*No repositories found.*\n\n`;
             } else {
               for (const repo of repos.slice(0, 15)) {
                 const isCloned = localProjects.some(p => p.remoteUrl?.includes(repo.url));
-                const clonedIcon = isCloned ? "✅ (clonado)" : "○";
+                const clonedIcon = isCloned ? "✅ (cloned)" : "○";
                 result += `- **${args.org}/${repo.name}** ${clonedIcon}\n`;
                 if (repo.description) {
                   result += `  ${repo.description}\n`;
                 }
               }
               if (repos.length > 15) {
-                result += `\n*...y ${repos.length - 15} más*\n`;
+                result += `\n*...and ${repos.length - 15} more*\n`;
               }
             }
           } else {
-            // User's orgs
             const orgs = listGhOrgs();
             const user = getGhUser();
             
-            // User's own repos
-            result += `**Tus repositorios (@${user}):**\n\n`;
+            result += `**Your repositories (@${user}):**\n\n`;
             const userRepos = listUserRepos(10);
             for (const repo of userRepos.slice(0, 5)) {
               const fullName = `${repo.owner.login}/${repo.name}`;
@@ -752,26 +731,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               result += `- ${fullName} ${clonedIcon}\n`;
             }
             
-            // Org repos
             if (orgs.length > 0) {
-              result += `\n**Organizaciones:**\n`;
+              result += `\n**Organizations:**\n`;
               for (const org of orgs.slice(0, 5)) {
-                result += `- ${org} (usa \`signoff_list_projects\` con \`org: "${org}"\` para ver repos)\n`;
+                result += `- ${org} (use \`signoff_list_projects\` with \`org: "${org}"\` to see repos)\n`;
               }
             }
           }
         }
         
         result += `\n---\n\n`;
-        result += `**Para seleccionar un proyecto:** \`signoff_select_project\` con el nombre o "org/repo"\n`;
-        result += `**Para clonar un nuevo proyecto:** \`signoff_clone_project\` con "org/repo"\n`;
+        result += `**To select a project:** \`signoff_select_project\` with the name or "org/repo"\n`;
+        result += `**To clone a new project:** \`signoff_clone_project\` with "org/repo"\n`;
         
         return { content: [{ type: "text", text: result }] };
       }
       
       case "signoff_select_project": {
         const project = args.project;
-        let result = `## Selección de Proyecto\n\n`;
+        let result = `## Project Selection\n\n`;
         
         // Case 1: Absolute path
         if (project.startsWith("/") || project.startsWith("C:") || project.startsWith("~")) {
@@ -781,46 +759,44 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             return {
               content: [{
                 type: "text",
-                text: `❌ El directorio no existe: ${resolvedPath}\n\nUsa \`signoff_clone_project\` para clonar un repositorio.`,
+                text: `❌ Directory does not exist: ${resolvedPath}\n\nUse \`signoff_clone_project\` to clone a repository.`,
               }],
               isError: true,
             };
           }
           
           currentProject = resolvedPath;
-          result += `✅ Proyecto seleccionado: ${resolvedPath}\n`;
+          result += `✅ Project selected: ${resolvedPath}\n`;
         }
         // Case 2: GitHub repo (contains /)
         else if (project.includes("/")) {
-          // Check if already cloned locally
           const repoName = project.split("/")[1];
           const localPath = join(projectsDir, repoName);
           
           if (existsSync(localPath)) {
             currentProject = localPath;
-            result += `✅ Proyecto encontrado localmente: ${localPath}\n`;
+            result += `✅ Project found locally: ${localPath}\n`;
           } else {
-            // Check if exists on GitHub
             if (!commandExists("gh") || !isGhAuthenticated()) {
               return {
                 content: [{
                   type: "text",
-                  text: `❌ El proyecto ${project} no está clonado y no puedo verificar en GitHub.\n\nUsa \`signoff_check_setup\` para configurar gh CLI.`,
+                  text: `❌ Project ${project} is not cloned and cannot verify on GitHub.\n\nUse \`signoff_check_setup\` to configure gh CLI.`,
                 }],
                 isError: true,
               };
             }
             
             if (repoExistsOnGitHub(project)) {
-              result += `⚠️ El proyecto ${project} existe en GitHub pero no está clonado.\n\n`;
-              result += `¿Quieres clonarlo? Usa:\n`;
-              result += `\`signoff_clone_project\` con \`repo: "${project}"\`\n`;
+              result += `⚠️ Project ${project} exists on GitHub but is not cloned.\n\n`;
+              result += `Would you like to clone it? Use:\n`;
+              result += `\`signoff_clone_project\` with \`repo: "${project}"\`\n`;
               return { content: [{ type: "text", text: result }] };
             } else {
               return {
                 content: [{
                   type: "text",
-                  text: `❌ No se encontró el repositorio: ${project}\n\nVerifica que el nombre sea correcto (formato: owner/repo).`,
+                  text: `❌ Repository not found: ${project}\n\nVerify the name is correct (format: owner/repo).`,
                 }],
                 isError: true,
               };
@@ -833,26 +809,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           
           if (existsSync(localPath)) {
             currentProject = localPath;
-            result += `✅ Proyecto seleccionado: ${localPath}\n`;
+            result += `✅ Project selected: ${localPath}\n`;
           } else {
             return {
               content: [{
                 type: "text",
-                text: `❌ No se encontró el proyecto: ${project}\n\nProyectos locales están en: ${projectsDir}\n\nUsa \`signoff_list_projects\` para ver proyectos disponibles.`,
+                text: `❌ Project not found: ${project}\n\nLocal projects are in: ${projectsDir}\n\nUse \`signoff_list_projects\` to see available projects.`,
               }],
               isError: true,
             };
           }
         }
         
-        // Show project status
         const hasGovernance = governanceExists();
-        result += `**Governance:** ${hasGovernance ? "✅ Configurado" : "⚠️ No configurado"}\n`;
+        result += `**Governance:** ${hasGovernance ? "✅ Configured" : "⚠️ Not configured"}\n`;
         
         if (!hasGovernance) {
-          result += `\n**Siguiente paso:** Usa \`signoff_setup_governance\` para configurar los leads.\n`;
+          result += `\n**Next step:** Use \`signoff_setup_governance\` to configure leads.\n`;
         } else {
-          result += `\n**Siguiente paso:** Usa \`signoff_status\` para ver el estado del proyecto.\n`;
+          result += `\n**Next step:** Use \`signoff_status\` to see project status.\n`;
         }
         
         return { content: [{ type: "text", text: result }] };
@@ -863,7 +838,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return {
             content: [{
               type: "text",
-              text: "❌ gh CLI no está instalado. Usa `signoff_check_setup` primero.",
+              text: "❌ gh CLI is not installed. Use `signoff_check_setup` first.",
             }],
             isError: true,
           };
@@ -873,7 +848,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return {
             content: [{
               type: "text",
-              text: "❌ No estás autenticado en GitHub. Usa `signoff_authenticate` primero.",
+              text: "❌ Not authenticated to GitHub. Use `signoff_authenticate` first.",
             }],
             isError: true,
           };
@@ -883,46 +858,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const folderName = args.folder_name || repo.split("/")[1];
         const targetDir = join(projectsDir, folderName);
         
-        // Check if already exists
         if (existsSync(targetDir)) {
           return {
             content: [{
               type: "text",
-              text: `⚠️ El directorio ya existe: ${targetDir}\n\nUsa \`signoff_select_project\` con \`project: "${folderName}"\` para seleccionarlo.`,
+              text: `⚠️ Directory already exists: ${targetDir}\n\nUse \`signoff_select_project\` with \`project: "${folderName}"\` to select it.`,
             }],
           };
         }
         
-        // Check if repo exists on GitHub
         if (!repoExistsOnGitHub(repo)) {
           return {
             content: [{
               type: "text",
-              text: `❌ No se encontró el repositorio: ${repo}\n\nVerifica que el nombre sea correcto y que tengas acceso.`,
+              text: `❌ Repository not found: ${repo}\n\nVerify the name is correct and that you have access.`,
             }],
             isError: true,
           };
         }
         
-        // Clone
-        let result = `## Clonando ${repo}\n\n`;
-        result += `Destino: ${targetDir}\n\n`;
+        let result = `## Cloning ${repo}\n\n`;
+        result += `Destination: ${targetDir}\n\n`;
         
         const cloneResult = cloneRepo(repo, targetDir);
         
         if (cloneResult.success) {
           currentProject = targetDir;
-          result += `✅ Clonado exitosamente!\n\n`;
-          result += `**Proyecto activo:** ${targetDir}\n`;
+          result += `✅ Successfully cloned!\n\n`;
+          result += `**Active project:** ${targetDir}\n`;
           
           const hasGovernance = governanceExists();
-          result += `**Governance:** ${hasGovernance ? "✅ Configurado" : "⚠️ No configurado"}\n`;
+          result += `**Governance:** ${hasGovernance ? "✅ Configured" : "⚠️ Not configured"}\n`;
           
           if (!hasGovernance) {
-            result += `\n**Siguiente paso:** Usa \`signoff_setup_governance\` para configurar los leads.\n`;
+            result += `\n**Next step:** Use \`signoff_setup_governance\` to configure leads.\n`;
           }
         } else {
-          result += `❌ Error al clonar: ${cloneResult.error}\n`;
+          result += `❌ Clone failed: ${cloneResult.error}\n`;
         }
         
         return { content: [{ type: "text", text: result }] };
@@ -931,18 +903,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // ===== WORKFLOW TOOLS =====
       case "signoff_status": {
         const projectRoot = getProjectRoot();
-        let result = `## Estado del Signoff Flow\n\n`;
+        let result = `## Signoff Flow Status\n\n`;
         
         if (!projectRoot) {
-          result += `❌ No hay proyecto seleccionado.\n\n`;
-          result += `Usa \`signoff_select_project\` para seleccionar un proyecto.\n`;
+          result += `❌ No project selected.\n\n`;
+          result += `Use \`signoff_select_project\` to select a project.\n`;
           return { content: [{ type: "text", text: result }] };
         }
         
-        result += `**Proyecto:** ${projectRoot}\n\n`;
+        result += `**Project:** ${projectRoot}\n\n`;
         
         const hasGovernance = governanceExists();
-        result += `**Governance:** ${hasGovernance ? "✅ Configurado" : "❌ No configurado"}\n\n`;
+        result += `**Governance:** ${hasGovernance ? "✅ Configured" : "❌ Not configured"}\n\n`;
         
         if (hasGovernance) {
           const governance = loadGovernance();
@@ -973,7 +945,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return {
             content: [{
               type: "text",
-              text: "❌ No hay proyecto seleccionado. Usa `signoff_select_project` primero.",
+              text: "❌ No project selected. Use `signoff_select_project` first.",
             }],
             isError: true,
           };
@@ -1029,7 +1001,7 @@ signoff_rules:
         return {
           content: [{
             type: "text",
-            text: `✅ Governance configurado!\n\n**Path:** ${govPath}\n**Jira Project:** ${args.jira_project_key}\n**BA Leads:** ${args.ba_leads.join(", ")}\n**Design Leads:** ${args.design_leads.join(", ")}\n**Dev Leads:** ${args.dev_leads.join(", ")}\n\nPuedes crear iniciativas con \`signoff_new_initiative\`.`,
+            text: `✅ Governance configured!\n\n**Path:** ${govPath}\n**Jira Project:** ${args.jira_project_key}\n**BA Leads:** ${args.ba_leads.join(", ")}\n**Design Leads:** ${args.design_leads.join(", ")}\n**Dev Leads:** ${args.dev_leads.join(", ")}\n\nYou can now create initiatives with \`signoff_new_initiative\`.`,
           }],
         };
       }
@@ -1039,7 +1011,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: "❌ No hay proyecto seleccionado. Usa `signoff_select_project` primero.",
+              text: "❌ No project selected. Use `signoff_select_project` first.",
             }],
             isError: true,
           };
@@ -1049,7 +1021,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: "❌ Governance no configurado. Usa `signoff_setup_governance` primero.",
+              text: "❌ Governance not configured. Use `signoff_setup_governance` first.",
             }],
           };
         }
@@ -1058,7 +1030,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: `❌ La iniciativa ${args.key} ya existe. Usa \`signoff_advance\` para continuar.`,
+              text: `❌ Initiative ${args.key} already exists. Use \`signoff_advance\` to continue.`,
             }],
           };
         }
@@ -1068,7 +1040,7 @@ signoff_rules:
         return {
           content: [{
             type: "text",
-            text: `✅ Iniciativa creada!\n\n**Key:** ${result.key}\n**Título:** ${result.title}\n**Path:** ${result.path}\n**Paso actual:** prd\n\nSiguiente: Usa \`signoff_advance\` para crear el artefacto PRD y PR.`,
+            text: `✅ Initiative created!\n\n**Key:** ${result.key}\n**Title:** ${result.title}\n**Path:** ${result.path}\n**Current Step:** prd\n\nNext: Use \`signoff_advance\` to create the PRD artifact and PR.`,
           }],
         };
       }
@@ -1078,7 +1050,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: `❌ Iniciativa ${args.key} no encontrada. Créala con \`signoff_new_initiative\`.`,
+              text: `❌ Initiative ${args.key} not found. Create it with \`signoff_new_initiative\`.`,
             }],
           };
         }
@@ -1091,7 +1063,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: `❌ Paso desconocido: ${currentStep}`,
+              text: `❌ Unknown step: ${currentStep}`,
             }],
           };
         }
@@ -1100,7 +1072,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: `✅ La iniciativa ${args.key} está completa! Todos los artefactos han sido firmados.`,
+              text: `✅ Initiative ${args.key} is complete! All artifacts have been signed off.`,
             }],
           };
         }
@@ -1116,7 +1088,7 @@ signoff_rules:
         return {
           content: [{
             type: "text",
-            text: `✅ Artefacto creado!\n\n**Iniciativa:** ${args.key}\n**Paso:** ${currentStep.toUpperCase()}\n**Artefacto:** ${artifactPath}\n**Signoffs requeridos:** ${groups.join(", ")}\n\n**Siguientes pasos:**\n1. Crear PR en GitHub para branch \`bmad/${args.key}/${currentStep}\`\n2. Crear tickets Jira con \`signoff_create_jira_tickets\`\n3. Solicitar reviews de los leads\n4. Cuando el PR se mergee, ejecuta \`signoff_advance\` de nuevo`,
+            text: `✅ Artifact created!\n\n**Initiative:** ${args.key}\n**Step:** ${currentStep.toUpperCase()}\n**Artifact:** ${artifactPath}\n**Required signoffs:** ${groups.join(", ")}\n\n**Next steps:**\n1. Create a GitHub PR for branch \`bmad/${args.key}/${currentStep}\`\n2. Create Jira tickets with \`signoff_create_jira_tickets\`\n3. Request reviews from leads\n4. When PR is merged, run \`signoff_advance\` again`,
           }],
         };
       }
@@ -1127,7 +1099,7 @@ signoff_rules:
           return {
             content: [{
               type: "text",
-              text: `❌ Artefacto desconocido: ${args.artifact}. Válidos: ${ARTIFACTS.join(", ")}`,
+              text: `❌ Unknown artifact: ${args.artifact}. Valid options: ${ARTIFACTS.join(", ")}`,
             }],
           };
         }
@@ -1135,16 +1107,16 @@ signoff_rules:
         const governance = loadGovernance();
         const jiraProject = governance?.jira?.project_key || "UNKNOWN";
         
-        let result = `## Tickets Jira a Crear\n\n`;
-        result += `Usa el MCP de Atlassian para crear estos tickets:\n\n`;
+        let result = `## Jira Tickets to Create\n\n`;
+        result += `Use the Atlassian MCP to create these tickets:\n\n`;
         
         for (const group of groups) {
           result += `### ${group.toUpperCase()} Signoff\n`;
-          result += `- **Summary:** \`[BMAD][${args.key}][${args.artifact}] Signoff requerido — ${group.toUpperCase()}\`\n`;
+          result += `- **Summary:** \`[BMAD][${args.key}][${args.artifact}] Signoff required — ${group.toUpperCase()}\`\n`;
           result += `- **Project:** ${jiraProject}\n`;
           result += `- **Type:** Task\n`;
           result += `- **Labels:** bmad, initiative-${args.key}, artifact-${args.artifact}, group-${group}\n`;
-          result += `- **Description:**\n\`\`\`\nBMAD signoff solicitado (lead-only).\n\nIniciativa: ${args.key}\nArtefacto: ${args.artifact.toUpperCase()}\nGrupo: ${group.toUpperCase()}\n\nPR: ${args.pr_url || "(pendiente)"}\n\nAcción: Aprueba el PR para dar signoff.\n\`\`\`\n\n`;
+          result += `- **Description:**\n\`\`\`\nBMAD signoff requested (lead-only).\n\nInitiative: ${args.key}\nArtifact: ${args.artifact.toUpperCase()}\nGroup: ${group.toUpperCase()}\n\nPR: ${args.pr_url || "(pending)"}\n\nAction: Approve the PR to sign off.\n\`\`\`\n\n`;
         }
         
         return { content: [{ type: "text", text: result }] };
@@ -1154,7 +1126,7 @@ signoff_rules:
         return {
           content: [{
             type: "text",
-            text: `Herramienta desconocida: ${name}`,
+            text: `Unknown tool: ${name}`,
           }],
           isError: true,
         };

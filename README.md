@@ -1,84 +1,91 @@
 # Signoff Flow MCP Server v2.0
 
-Servidor MCP para gestionar flujos de signoff con **onboarding automático** para usuarios no técnicos.
+MCP server for managing signoff workflows with **automatic onboarding** for non-technical users.
 
-## Novedades en v2.0
+## What's New in v2.0
 
-- **Instalación automática de gh CLI** - Si no está instalado, se instala automáticamente
-- **Flujo de onboarding guiado** - El usuario es guiado paso a paso
-- **Gestión de proyectos** - Lista, clona y selecciona proyectos desde GitHub
-- **Soporte multi-proyecto** - Trabaja con diferentes proyectos sin reconfigurar
+- **Automatic gh CLI installation** - If not installed, it's installed automatically
+- **Guided onboarding flow** - Users are guided step by step
+- **Project management** - List, clone and select projects from GitHub
+- **Multi-project support** - Work with different projects without reconfiguring
 
-## Flujo de Uso
+## Usage Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  1. signoff_check_setup                                     │
-│     "¿Está todo listo?"                                     │
-│     → Verifica/instala gh CLI                               │
-│     → Verifica autenticación                                │
+│     "Is everything ready?"                                  │
+│     → Verifies/installs gh CLI                              │
+│     → Verifies authentication                               │
 ├─────────────────────────────────────────────────────────────┤
-│  2. signoff_authenticate (si es necesario)                  │
-│     "Necesito conectarme a GitHub"                          │
-│     → Guía el proceso de login                              │
+│  2. signoff_authenticate (if needed)                        │
+│     "I need to connect to GitHub"                           │
+│     → Guides the login process                              │
 ├─────────────────────────────────────────────────────────────┤
 │  3. signoff_list_projects                                   │
-│     "¿En qué proyectos puedo trabajar?"                     │
-│     → Muestra proyectos locales y remotos                   │
+│     "What projects can I work on?"                          │
+│     → Shows local and remote projects                       │
 ├─────────────────────────────────────────────────────────────┤
 │  4. signoff_select_project / signoff_clone_project          │
-│     "Quiero trabajar en X proyecto"                         │
-│     → Selecciona o clona el proyecto                        │
+│     "I want to work on project X"                           │
+│     → Selects or clones the project                         │
 ├─────────────────────────────────────────────────────────────┤
 │  5. signoff_status / signoff_setup_governance               │
-│     "¿Cómo está configurado el proyecto?"                   │
-│     → Muestra o configura governance                        │
+│     "How is the project configured?"                        │
+│     → Shows or configures governance                        │
 ├─────────────────────────────────────────────────────────────┤
 │  6. signoff_new_initiative / signoff_advance                │
-│     "Crear/avanzar una iniciativa"                          │
-│     → Gestiona el flujo de signoffs                         │
+│     "Create/advance an initiative"                          │
+│     → Manages the signoff workflow                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Herramientas Disponibles
+## Available Tools
 
 ### Setup
-| Tool | Descripción |
+| Tool | Description |
 |------|-------------|
-| `signoff_check_setup` | Verifica el entorno (gh CLI, autenticación). **Llamar siempre primero.** |
-| `signoff_authenticate` | Guía el proceso de autenticación en GitHub |
+| `signoff_check_setup` | Verify the environment (gh CLI, authentication). **Always call this first.** |
+| `signoff_authenticate` | Guide the GitHub authentication process |
 
-### Gestión de Proyectos
-| Tool | Descripción |
+### Project Management
+| Tool | Description |
 |------|-------------|
-| `signoff_list_projects` | Lista proyectos locales y de GitHub |
-| `signoff_select_project` | Selecciona un proyecto para trabajar |
-| `signoff_clone_project` | Clona un repositorio de GitHub |
+| `signoff_list_projects` | List local and GitHub projects |
+| `signoff_select_project` | Select a project to work with |
+| `signoff_clone_project` | Clone a GitHub repository |
 
 ### Workflow
-| Tool | Descripción |
+| Tool | Description |
 |------|-------------|
-| `signoff_status` | Muestra estado del proyecto y governance |
-| `signoff_setup_governance` | Configura leads y reglas de signoff |
-| `signoff_new_initiative` | Crea una nueva iniciativa |
-| `signoff_advance` | Avanza al siguiente paso de la iniciativa |
-| `signoff_create_jira_tickets` | Genera tickets de Jira para signoff |
+| `signoff_status` | Show project status and governance |
+| `signoff_setup_governance` | Configure leads and signoff rules |
+| `signoff_new_initiative` | Create a new initiative |
+| `signoff_advance` | Advance to the next step of an initiative |
+| `signoff_create_jira_tickets` | Generate Jira tickets for signoff |
 
-## Instalación
+## Installation
 
-### Requisitos
+### Requirements
 - Node.js 18+
-- macOS o Windows
+- macOS or Windows
 
-### Para Claude Desktop
+### For Claude Desktop (MCPB - Recommended)
 
-1. Instala las dependencias:
+1. Download the `.mcpb` file from [Releases](https://github.com/kikeacevedo/signoff-flow-mcp-v2/releases)
+2. Double-click the file or drag it into Claude Desktop
+3. Done!
+
+### Manual Installation
+
+1. Clone this repository:
 ```bash
-cd /path/to/signoff-flow-mcp-v2
+git clone https://github.com/kikeacevedo/signoff-flow-mcp-v2.git
+cd signoff-flow-mcp-v2
 npm install
 ```
 
-2. Configura en Claude Desktop (`claude_desktop_config.json`):
+2. Configure in Claude Desktop (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
@@ -90,56 +97,74 @@ npm install
 }
 ```
 
-3. Reinicia Claude Desktop
+3. Restart Claude Desktop
 
-### Ubicación del archivo de configuración
+### Config File Location
 
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-## Ejemplo de Conversación
+## Example Conversation
 
 ```
-Usuario: "Hola, quiero revisar los signoffs de un proyecto"
+User: "Hi, I want to review the signoffs for a project"
 
 Claude: [signoff_check_setup]
-        "Veo que no tienes gh CLI instalado. Instalando automáticamente...
-         ✅ gh CLI instalado!
+        "I see you don't have gh CLI installed. Installing automatically...
+         ✅ gh CLI installed!
          
-         Ahora necesitas autenticarte en GitHub."
+         Now you need to authenticate to GitHub."
 
-Usuario: "Ok, ¿cómo me autentico?"
+User: "Ok, how do I authenticate?"
 
 Claude: [signoff_authenticate]
-        "Abre una terminal y ejecuta: gh auth login
-         Sigue las instrucciones..."
+        "Open a terminal and run: gh auth login
+         Follow the prompts..."
 
-Usuario: "Listo, ya me autentiqué"
+User: "Done, I'm authenticated"
 
 Claude: [signoff_check_setup]
-        "✅ Autenticado como: tu-usuario
+        "✅ Authenticated as: your-username
          
-         ¿En qué proyecto quieres trabajar?"
+         Which project do you want to work on?"
 
-Usuario: "En HALO/feature-payments"
+User: "HALO/feature-payments"
 
 Claude: [signoff_select_project]
-        "El proyecto existe en GitHub pero no está clonado.
-         ¿Quieres que lo clone?"
+        "The project exists on GitHub but is not cloned.
+         Would you like me to clone it?"
 
-Usuario: "Sí, clónalo"
+User: "Yes, clone it"
 
 Claude: [signoff_clone_project]
-        "✅ Clonado en ~/signoff-projects/feature-payments
-         El proyecto no tiene governance configurado."
+        "✅ Cloned to ~/signoff-projects/feature-payments
+         The project doesn't have governance configured yet."
 ```
 
-## Directorio de Proyectos
+## Projects Directory
 
-Por defecto, los proyectos se clonan en:
+By default, projects are cloned to:
 - **macOS/Linux**: `~/signoff-projects/`
 - **Windows**: `C:\Users\<user>\signoff-projects\`
 
-## Licencia
+## For Teams (Claude for Teams)
+
+### Admin Allowlist (Recommended)
+
+As an organization Owner:
+1. Open Claude Desktop
+2. Go to **Admin settings → Connectors → Desktop**
+3. Enable the **Allowlist**
+4. Upload the `signoff-flow.mcpb` file
+5. All team members will see it available automatically
+
+### Direct Share
+
+Share the download link with your team:
+```
+https://github.com/kikeacevedo/signoff-flow-mcp-v2/releases/latest/download/signoff-flow.mcpb
+```
+
+## License
 
 MIT
