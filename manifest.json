@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "signoff-flow",
   "display_name": "Signoff Flow",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Manage signoff workflows for product initiatives with GitHub and Jira integration.",
   "long_description": "A tool for product teams to manage signoff workflows for initiatives. Includes automatic onboarding (installs gh CLI if needed), project management (clone repos from GitHub), and artifact creation with Jira tickets. Designed for non-technical users like Product Managers.",
   "author": {

@@ -30,7 +30,7 @@ let projectsDir = join(homedir(), "signoff-projects");
 const server = new Server(
   {
     name: "signoff-flow-mcp",
-    version: "2.0.1",
+    version: "2.0.2",
   },
   {
     capabilities: {
@@ -905,9 +905,56 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const projectRoot = getProjectRoot();
         let result = `## Signoff Flow Status\n\n`;
         
+        // Check if no project is selected
         if (!projectRoot) {
-          result += `❌ No project selected.\n\n`;
-          result += `Use \`signoff_select_project\` to select a project.\n`;
+          result += `### ⚠️ No project selected\n\n`;
+          result += `You need to select a project first. Let me help you find one.\n\n`;
+          
+          // Check if gh is available to list projects
+          if (commandExists("gh") && isGhAuthenticated()) {
+            const user = getGhUser();
+            result += `You're authenticated as **@${user}**.\n\n`;
+            
+            // Show local projects if any
+            const localProjects = getLocalProjects();
+            if (localProjects.length > 0) {
+              result += `### 📁 Local Projects\n\n`;
+              for (const proj of localProjects.slice(0, 5)) {
+                const govIcon = proj.hasGovernance ? "✅" : "⚪";
+                result += `- **${proj.name}** ${govIcon}\n`;
+              }
+              result += `\n`;
+            }
+            
+            // Show organizations
+            const orgs = listGhOrgs();
+            if (orgs.length > 0) {
+              result += `### 🏢 Your Organizations\n\n`;
+              for (const org of orgs.slice(0, 5)) {
+                result += `- ${org}\n`;
+              }
+              result += `\n`;
+            }
+            
+            // Show user repos
+            const userRepos = listUserRepos(5);
+            if (userRepos.length > 0) {
+              result += `### 📂 Your Recent Repositories\n\n`;
+              for (const repo of userRepos.slice(0, 5)) {
+                result += `- ${repo.owner.login}/${repo.name}\n`;
+              }
+              result += `\n`;
+            }
+            
+            result += `---\n\n`;
+            result += `**To select a project:**\n`;
+            result += `- Use \`signoff_select_project\` with the project name or path\n`;
+            result += `- Use \`signoff_clone_project\` to clone a repo (e.g., \`org/repo-name\`)\n`;
+            result += `- Use \`signoff_list_projects\` with \`org: "ORG_NAME"\` to see repos in an organization\n`;
+          } else {
+            result += `To get started, use \`signoff_check_setup\` to verify your environment.\n`;
+          }
+          
           return { content: [{ type: "text", text: result }] };
         }
         
@@ -922,6 +969,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           result += `**BA Leads:** ${governance?.groups?.ba?.leads?.github_users?.join(", ") || "None"}\n`;
           result += `**Design Leads:** ${governance?.groups?.design?.leads?.github_users?.join(", ") || "None"}\n`;
           result += `**Dev Leads:** ${governance?.groups?.dev?.leads?.github_users?.join(", ") || "None"}\n\n`;
+        } else {
+          result += `**Next step:** Use \`signoff_setup_governance\` to configure leads.\n\n`;
         }
         
         if (args?.initiative_key) {
